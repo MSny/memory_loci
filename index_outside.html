@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>DemoBabylon</title>
+	
+	
+
+   <script src="https://preview.babylonjs.com/cannon.js"></script>
+   <script src="https://preview.babylonjs.com/Oimo.js"></script>
+   <script src="https://preview.babylonjs.com/babylon.js"></script>    
+   <script src="https://rawgit.com/BabylonJS/Extensions/master/canvas2D/dist/preview%20release/babylon.canvas2d.min.js"></script>
+   <script src="https://preview.babylonjs.com/inspector/babylon.inspector.bundle.js"></script>
+
+   <script src="https://preview.babylonjs.com/materialsLibrary/babylon.fireMaterial.min.js"></script>
+   <script src="https://preview.babylonjs.com/materialsLibrary/babylon.waterMaterial.min.js"></script>
+   <script src="https://preview.babylonjs.com/materialsLibrary/babylon.lavaMaterial.min.js"></script>
+   <script src="https://preview.babylonjs.com/materialsLibrary/babylon.normalMaterial.min.js"></script>
+   <script src="https://preview.babylonjs.com/materialsLibrary/babylon.skyMaterial.min.js"></script>
+   <script src="https://preview.babylonjs.com/materialsLibrary/babylon.triPlanarMaterial.min.js"></script>
+   <script src="https://preview.babylonjs.com/materialsLibrary/babylon.terrainMaterial.min.js"></script>
+   <script src="https://preview.babylonjs.com/materialsLibrary/babylon.gradientMaterial.min.js"></script>
+   <script src="https://preview.babylonjs.com/materialsLibrary/babylon.furMaterial.min.js"></script>
+   <script src="https://preview.babylonjs.com/materialsLibrary/babylon.gridMaterial.min.js"></script>
+   <script src="https://preview.babylonjs.com/materialsLibrary/babylon.shadowOnlyMaterial.min.js"></script>
+
+   <script src="https://preview.babylonjs.com/proceduralTexturesLibrary/babylon.brickProceduralTexture.min.js"></script>
+   <script src="https://preview.babylonjs.com/proceduralTexturesLibrary/babylon.cloudProceduralTexture.min.js"></script>
+   <script src="https://preview.babylonjs.com/proceduralTexturesLibrary/babylon.fireProceduralTexture.min.js"></script>
+   <script src="https://preview.babylonjs.com/proceduralTexturesLibrary/babylon.grassProceduralTexture.min.js"></script>
+   <script src="https://preview.babylonjs.com/proceduralTexturesLibrary/babylon.marbleProceduralTexture.min.js"></script>
+   <script src="https://preview.babylonjs.com/proceduralTexturesLibrary/babylon.roadProceduralTexture.min.js"></script>
+   <script src="https://preview.babylonjs.com/proceduralTexturesLibrary/babylon.starfieldProceduralTexture.min.js"></script>
+   <script src="https://preview.babylonjs.com/proceduralTexturesLibrary/babylon.woodProceduralTexture.min.js"></script>
+
+   <script src="https://preview.babylonjs.com/postProcessesLibrary/babylon.asciiArtPostProcess.min.js"></script>
+   <script src="https://preview.babylonjs.com/postProcessesLibrary/babylon.digitalRainPostProcess.min.js"></script>
+
+   <script src="https://preview.babylonjs.com/loaders/babylon.glTFFileLoader.js"></script>
+   <script src="https://preview.babylonjs.com/loaders/babylon.objFileLoader.js"></script>
+   <script src="https://preview.babylonjs.com/loaders/babylon.stlFileLoader.js"></script>
+
+   <script src="https://rawgit.com/BabylonJS/Extensions/master/ClonerSystem/src/babylonx.cloner.js"></script>
+
+   <script src="https://rawgit.com/BabylonJS/Extensions/master/CompoundShader/src/babylonx.CompoundShader.js"></script>
+
+   <style>
+    html, body {
+        overflow: hidden;
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+    }
+
+    #renderCanvas {
+        width: 100%;
+        height: 100%;
+        touch-action: none;
+    }
+</style>
+</head>
+
+<body>
+	
+	<div id="canvasZone">
+        <canvas id="renderCanvas"></canvas>
+    </div>
+    <script>
+       
+        var canvas = document.getElementById("renderCanvas");
+        var engine = new BABYLON.Engine(canvas, true);
+
+        var scene;
+        var camera;
+        var cubes = [];
+        var wscs = [];
+        var target;
+        var target2;
+        var particleSystem;
+        var haloCenter = new BABYLON.Vector3(0, 0, 0);
+        var leftController;
+        var objectSelected = false;
+        var objectSelecting = false;
+        var currentMeshSelected = null;
+        var previousText;
+        var currentIndex;
+        var teleportationAllowed;
+        var cameraChoice;
+
+
+
+        var createScene = function() {
+           scene = new BABYLON.Scene(engine);
+           var ding = new BABYLON.Sound("Ding", "assets/textures/Ding.wav", scene);
+           var vaso = new BABYLON.Sound("Vaso", "assets/textures/vaso.mp3", scene);
+           var silla = new BABYLON.Sound("Silla", "assets/textures/silla.mp3", scene);
+            var textInputs = (function getJsonFromUrl() {
+      var query = location.search.substr(1);
+      var result = {};
+      query.split("&").forEach(function(part) {
+        var item = part.split("=");
+        result[item[0]] = decodeURIComponent(item[1]);
+    });
+      console.log(result);
+      console.log(result.text1);
+      text1 = result.text1;
+      text2 = result.text2;
+      text3 = result.text3;
+      cameraChoice = result.camera == 'Cardboard' ? true: false;
+      console.log("text 3" + text3);
+      return result;
+
+     
+
+      
+
+  }
+  )();
+           createCamera(cameraChoice);
+
+           var light = new BABYLON.PointLight("Omni", new BABYLON.Vector3(0, 6, 0), scene);
+           console.log("in create scene");
+           createGround();
+           createCubesAndUI();
+           createSky();
+           loadAssets();
+           createTargetMesh();
+           createParticles();
+ 
+ 
+            var assetsManager1 = new BABYLON.AssetsManager(scene);
+            var meshTask1 = assetsManager1.addMeshTask("red_toad", "red_toad", "assets/textures/", "toad.babylon");
+            var meshFlag = assetsManager1.addMeshTask("cup", "", "assets/textures/", "cup.babylon");
+            var meshChair = assetsManager1.addMeshTask("cup", "", "assets/textures/", "chair.babylon");
+           // var meshPhone = assetsManager1.addMeshTask("s6", "", "assets/textures/", "shoes.babylon");
+             meshTask1.onSuccess = function (task) {
+
+             task.loadedMeshes[0].position = new BABYLON.Vector3(5, 2, 0);
+             task.loadedMeshes[0].rotation.y += 2;
+             task.loadedMeshes[0].scaling = new BABYLON.Vector3(0.5, 0.5, 0.5);
+            task.loadedMeshes[0].isPickable = false;
+      task.loadedMeshes[0].isVisible = false;
+
+  };
+
+  meshFlag.onSuccess = function (task) {
+
+             task.loadedMeshes[0].position = new BABYLON.Vector3(-5, 2, 0);
+             task.loadedMeshes[0].rotation.y += -1.5;
+             task.loadedMeshes[0].scaling = new BABYLON.Vector3(0.5, 0.5, 0.5);
+            task.loadedMeshes[0].isPickable = false;
+             task.loadedMeshes[0].isVisible = true;
+
+  };
+
+   meshChair.onSuccess = function (task) {
+
+             
+             for (var i=0; i < task.loadedMeshes.length; i++) {
+             task.loadedMeshes[i].position = new BABYLON.Vector3(0, 0.5, 5);
+             //task.loadedMeshes[i].rotation.zz += 1.5;
+             task.loadedMeshes[i].scaling = new BABYLON.Vector3(0.02, 0.02, 0.02);
+             }
+            task.loadedMeshes[0].isPickable = false;
+             task.loadedMeshes[0].isVisible = true;
+
+  };
+
+  
+  assetsManager1.load();
+
+           
+           
+           scene.registerBeforeRender(function () {
+            cubes[0].rotation.y = 6;
+            cubes[1].rotation.y = 1.5;
+            cubes[2].rotation.y = -1.5;
+            cubes[3].rotation.y = 2.5;
+            for (var i=0; i < cubes.length; i++) {
+             // cubes[i].rotation.y = 1.5;
+          } 
+
+          castRayAndSelectObject(ding, textInputs, meshTask1, vaso, silla, meshFlag, meshChair);
+      });
+
+           scene.onPrePointerObservable.add( function(pointerInfo, eventState) {
+        // on double tap/click
+        if (!teleportationAllowed) {
+            return;
+        }
+
+        camera.position.x = haloCenter.x;
+        camera.position.z = haloCenter.z;
+
+    }, BABYLON.PointerEventTypes.POINTERDOUBLETAP, false);
+
+           return scene;
+       };
+
+       var createCamera = function() {
+        if (navigator.getVRDisplays) {
+            camera = new BABYLON.WebVRFreeCamera("camera1", new BABYLON.Vector3(0, 2, 0), scene);
+        }
+        else if (cameraChoice == false) {
+            camera = new BABYLON.UniversalCamera("camera1", new BABYLON.Vector3(0, 2, 0), scene);
+        }
+        else {
+            camera = new BABYLON.VRDeviceOrientationFreeCamera("vrCam", new BABYLON.Vector3(0, 1, 0), scene);
+        }
+
+    // Touch or click the rendering canvas to enter VR Mode
+    scene.onPointerDown = function () {
+        scene.onPointerDown = undefined;
+        camera.attachControl(canvas, true);
+
+        if (camera.controllers) {
+            camera.controllers.forEach((gp) => {
+                if (gp.hand === "left") {
+                    leftController = gp._mesh;
+
+                    gp.onMainButtonStateChangedObservable.add(function (stateObject) {
+                        // on double tap/click
+                        if (!teleportationAllowed || stateObject.value === 0) {
+                            return;
+                        }
+                        camera.position.x = haloCenter.x;
+                        camera.position.z = haloCenter.z;
+                    });
+                }
+            });
+        }
+    };
+};
+
+var createGround = function() {
+    var ground = BABYLON.Mesh.CreateGround("ground1", 12, 36, 2, scene);	
+    var groundMaterial = new BABYLON.StandardMaterial("ground", scene);
+    groundMaterial.diffuseTexture = new BABYLON.Texture("assets/textures/ground.jpg", scene);
+    groundMaterial.diffuseTexture.uScale = 6;
+    groundMaterial.diffuseTexture.vScale = 6;
+    groundMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
+    ground.material = groundMaterial;
+};
+// cubes and text 
+var createCubesAndUI = function() {
+    for (var i=0; i < 4; i++) {
+        cubes.push(new BABYLON.Mesh.CreateBox("cube"+i, 2, scene));
+        cubes[i].position.y = 1;
+        cubes[i].material = new BABYLON.StandardMaterial("cubeMat", scene);
+        wscs.push(createNewWSC(scene, "Cube "+i));
+        wscs[i].worldSpaceCanvasNode.parent  = cubes[i];
+        wscs[i].worldSpaceCanvasNode.position.y = 2;
+        wscs[i].worldSpaceCanvasNode.material.backFaceCulling = false;
+    }
+
+    cubes[0].position.z = 8;
+    cubes[1].position.x = 8;
+    cubes[2].position.x = -8;
+    cubes[3].position.z = -8;
+
+
+
+    console.log(wscs[0]);
+};
+
+var createNewWSC = function (scene, text) {
+    var myText2D = new BABYLON.Text2D(text, { fontName: "40pt Lucida Console", marginAlignment: "h: center, v: center", fontSignedDistanceField: true });
+    
+    var WSC = new BABYLON.WorldSpaceCanvas2D(scene, new BABYLON.Size(3, 3), {
+        id: "WorldSpaceCanvas",
+        backgroundFill: "#C0C0C040",
+        backgroundRoundRadius: 20,
+        unitScaleFactor: 100,
+        children: [myText2D]
+    });
+
+    return WSC;
+};
+
+var createParticles = function() {
+    // Create a particle system
+    particleSystem = new BABYLON.ParticleSystem("particles", 500, scene);
+    particleSystem.particleTexture = new BABYLON.Texture("assets/textures/Flare.png", scene);
+    particleSystem.minSize = 0.1;
+    particleSystem.maxSize = 0.3;
+    particleSystem.minEmitPower = 1.0;
+    particleSystem.maxEmitPower = 2.0;
+    particleSystem.minLifeTime = 0.5;
+    particleSystem.maxLifeTime = 1.0;
+    particleSystem.emitter = BABYLON.Vector3.Zero();
+    particleSystem.emitRate = 500;
+    particleSystem.blendMode = BABYLON.ParticleSystem.BLENDMODE_ONEONE;
+    particleSystem.minEmitBox = new BABYLON.Vector3(0, 0, 0);
+    particleSystem.maxEmitBox = new BABYLON.Vector3(0, 0, 0);
+    particleSystem.gravity = new BABYLON.Vector3(0, -0.5, 0);
+    particleSystem.direction1 = new BABYLON.Vector3(0, 0.5, 0);
+    particleSystem.direction2 = new BABYLON.Vector3(0, 0.05, 0);
+
+    var alpha = 0;
+    scene.registerBeforeRender(function () {
+        // animate halo
+        particleSystem.emitter.x = haloCenter.x + 0.5 * Math.cos(alpha);
+        particleSystem.emitter.y = haloCenter.y;
+        particleSystem.emitter.z = haloCenter.z + 0.5  * Math.sin(alpha);
+
+        alpha += 0.5 * scene.getAnimationRatio();
+    });
+};
+
+var createSky = function() {
+    var skybox = BABYLON.Mesh.CreateBox("skyBox", 100.0, scene);
+    var skyboxMaterial = new BABYLON.StandardMaterial("skyBox", scene);
+    skyboxMaterial.backFaceCulling = false;
+    skyboxMaterial.reflectionTexture = new BABYLON.CubeTexture("assets/textures/skybox", scene);
+    skyboxMaterial.reflectionTexture.coordinatesMode = BABYLON.Texture.SKYBOX_MODE;
+    skyboxMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0);
+    skyboxMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
+    skyboxMaterial.disableLighting = true;
+    skybox.material = skyboxMaterial;
+};
+
+var loadAssets = function() {
+    engine.enableOfflineSupport = false;
+    var assetsManager = new BABYLON.AssetsManager(scene);
+
+	//var meshTask1 = assetsManager.addMeshTask("health_pack", "", "assets/textures/", "health-pack.babylon");
+    // Our built-in 'sphere' shape. Params: name, subdivs, size, scene
+   
+
+
+
+  /*
+  var textPlaneTexture = new BABYLON.DynamicTexture("dynamic texture", 512, scene, true);
+  textPlaneTexture.drawText(textInputs.text1.toString(), null, 150, "bold 140px verdana", "white", "transparent");
+  textPlaneTexture.hasAlpha = true;
+  var startpos;
+
+
+
+
+  var textPlane = BABYLON.Mesh.CreatePlane("textPlane", 1, scene, false);
+  textPlane.billboardMode = BABYLON.AbstractMesh.BILLBOARDMODE_ALL;
+  textPlane.material = new BABYLON.StandardMaterial("textPlane", scene);
+  textPlane.position = new BABYLON.Vector3(5, 3, 5);
+  textPlane.material.diffuseTexture = textPlaneTexture;
+  textPlane.material.specularColor = new BABYLON.Color3(0, 0, 0);
+  textPlane.material.emissiveColor = new BABYLON.Color3(1, 1, 1);
+  textPlane.material.backFaceCulling = false;
+*/
+
+ // var meshTask1 = assetsManager.addMeshTask("red_toad", "red_toad", "assets/textures/", "toad.babylon");
+    //var meshTask1 = assetsManager.addMeshTask("TowerA", "", "https://david.blob.core.windows.net/babylonjs/utd/assets/models/towers/", "TA1.babylon");
+    var meshTask2 = assetsManager.addMeshTask("TowerB", "", "https://david.blob.core.windows.net/babylonjs/utd/assets/models/towers/", "TB1.babylon");
+    var meshTask3 = assetsManager.addMeshTask("TowerC", "", "https://david.blob.core.windows.net/babylonjs/utd/assets/models/towers/", "TC1.babylon");
+    var meshTask4 = assetsManager.addMeshTask("Tree", "", "https://david.blob.core.windows.net/babylonjs/utd/assets/models/trees/", "T3.babylon");
+    var meshTask5 = assetsManager.addMeshTask("BigTowerC", "", "https://david.blob.core.windows.net/babylonjs/utd/assets/models/towers/", "TC3.babylon");
+     
+
+  meshTask2.onSuccess = function (task) {
+    task.loadedMeshes[0].position = new BABYLON.Vector3(-5, 0, 5);
+    task.loadedMeshes[0].scaling = new BABYLON.Vector3(0.5, 0.5, 0.5);
+    task.loadedMeshes[0].isPickable = false;
+};
+
+meshTask3.onSuccess = function (task) {
+    task.loadedMeshes[0].position = new BABYLON.Vector3(5, 0, -5);
+    task.loadedMeshes[0].scaling = new BABYLON.Vector3(0.5, 0.5, 0.5);
+    task.loadedMeshes[0].isPickable = false;
+};
+
+meshTask4.onSuccess = function (task) {
+    task.loadedMeshes[0].position = new BABYLON.Vector3(-5, 0, -5);
+    task.loadedMeshes[0].scaling = new BABYLON.Vector3(0.5, 0.5, 0.5);
+    task.loadedMeshes[0].isPickable = false;
+};
+
+meshTask5.onSuccess = function (task) {
+    task.loadedMeshes[0].position = new BABYLON.Vector3(0, 0, 15);
+    task.loadedMeshes[0].scaling = new BABYLON.Vector3(0.5, 0.5, 0.5);
+    task.loadedMeshes[0].isPickable = false;
+};
+
+assetsManager.load();
+};
+
+var createTargetMesh = function () {
+    target = BABYLON.Mesh.CreateSphere("sphere", 12, 0.025, scene);
+    var targetMat = new BABYLON.StandardMaterial("targetMat", scene);
+    targetMat.emissiveColor = BABYLON.Color3.Green();
+    target.material = targetMat;
+    target.parent = camera;
+    target.position.z = 2;
+
+};
+
+function vecToWorld(vector, camera){
+    var m = camera.getWorldMatrix();
+    var v = BABYLON.Vector3.TransformNormal(vector, m);
+    return v;		 
+}
+
+function predicate(mesh){
+    if (mesh.name.indexOf("cube") !== -1 || mesh.name.indexOf("ground") !== -1){
+        return true;
+    }
+    return false;
+}
+
+function unselect() {
+    objectViewed = false;
+    objectSelecting = false;
+    objectSelected = false;
+    target.scaling.x = 1;
+    target.scaling.y = 1;
+    target.scaling.z = 1;
+    if (!currentMeshSelected) {
+        return;
+    }
+    currentMeshSelected.material.diffuseColor = BABYLON.Color3.White();
+}
+
+function moveTeleportationSelectorTo(coordinates) {
+    teleportationAllowed = true;
+    haloCenter.copyFrom(coordinates);
+    particleSystem.start();
+}
+
+var helper;
+var mouseOnly = false;
+
+var castRayAndSelectObject = function(ding, textInputs, meshTask1, vaso, silla, vaspOb, sillaOb){      
+    var leftCamera = camera._rigCameras[0];
+	//var ding = new BABYLON.Sound("Ding", "assets/textures/Ding.wav", scene);
+    if (!leftCamera) {
+        return;
+    } 
+
+    var origin;
+    var direction;
+    if (mouseOnly || !leftController) {
+        var m = leftCamera.getWorldMatrix();
+        
+        if (camera.devicePosition) {
+            origin = camera.position.add(camera.devicePosition);
+        }
+        else {
+            origin = camera.position;
+        }
+
+        var forward = new BABYLON.Vector3(0, 0, 1);
+        forward = vecToWorld(forward, leftCamera);
+
+        direction = BABYLON.Vector3.Normalize(forward);
+    } else {
+        var m = leftController.getWorldMatrix();
+        origin = m.getTranslation();
+
+        var forward = new BABYLON.Vector3(0, 0, -1);
+        forward = vecToWorld(forward, leftController);
+
+        direction = BABYLON.Vector3.Normalize(forward);
+    }
+
+    var length = 100;
+    var ray = new BABYLON.Ray(origin, direction, length);
+    var hit = scene.pickWithRay(ray, predicate);
+   
+    if (helper) {
+        helper.dispose();
+    }
+
+  //  if (!mouseOnly && leftController) {
+    helper = BABYLON.RayHelper.CreateAndShow(ray, scene, new BABYLON.Color3(1, 1, 0.1));
+   // }
+   if (hit.pickedMesh) {
+    if (hit.pickedMesh.name.indexOf("ground") !== -1) {
+        unselect();
+        moveTeleportationSelectorTo(hit.pickedPoint);
+        return;
+    }
+    particleSystem.stop();
+    teleportationAllowed = false;
+    currentMeshSelected = hit.pickedMesh;
+    currentIndex = currentMeshSelected.name.charAt(currentMeshSelected.name.length - 1);
+    if (!objectSelecting) {
+        objectSelecting = true;
+        currentMeshSelected.material.diffuseColor = BABYLON.Color3.Red();
+        previousText =  wscs[currentIndex].children[0].text;
+        //wscs[currentIndex].children[0].text = textInputs.text1;
+        ding.play();
+    }
+
+    if (target.scaling.x >= 2) {
+        if (!objectSelected) {
+            objectSelected = true;
+            
+            currentMeshSelected.material.diffuseTexture = new BABYLON.Texture("assets/textures/home.jpg", scene);
+            currentMeshSelected.isVisible = false;
+            wscs[currentIndex].children[0].text = textInputs.text2;
+            if (currentIndex == 2) {
+                currentMeshSelected.isVisible = false;
+                wscs[currentIndex].children[0].text = textInputs.text2;
+                vaso.play();
+            }
+            else if (currentIndex == 0){
+                currentMeshSelected.isVisible = false;
+                wscs[currentIndex].children[0].text = textInputs.text3;
+                silla.play();
+            }
+           // ding.play();
+            meshTask1.loadedMeshes[0].isVisible = true;
+        }
+    }
+    else {
+        target.scaling.x += 0.02;
+        target.scaling.y += 0.02;
+        target.scaling.z += 0.02;
+    }
+    return;
+}
+else {
+    if (objectSelecting) {
+        objectSelecting = false;
+        objectSelected = false;
+        target.scaling.x = 1;
+        target.scaling.y = 1;
+        target.scaling.z = 1;
+        currentMeshSelected.material.diffuseColor = BABYLON.Color3.White();
+        wscs[currentIndex].children[0].text = previousText;
+    }
+}
+ wscs[0].children[0].text = "silla";
+    wscs[1].children[0].text = "video juego";
+    wscs[2].children[0].text = "vaso";
+    //wscs[2].children[0].text = "Moon Landing";
+};
+
+
+var scene = createScene();
+
+engine.runRenderLoop(function () {
+    scene.render();
+});
+
+        // Resize
+        window.addEventListener("resize", function () {
+            engine.resize();
+        });
+
+
+    </script>
+
+</body>
+<!--
+
+-->
+</html>
